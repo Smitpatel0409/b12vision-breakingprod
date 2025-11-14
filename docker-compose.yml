@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # MinIO Object Storage Service
+  minio:
+    image: minio/minio:latest
+    container_name: b12-minio
+    ports:
+      - "9000:9000"  # MinIO API port
+      - "9001:9001"  # MinIO Console (Web UI) port
+    environment:
+      # MinIO root credentials (change these in production!)
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      # Persist MinIO data on host machine
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - b12-network
+    restart: unless-stopped
+
+  # Flask Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: b12-app
+    ports:
+      - "5002:5002"  # Flask application port
+    environment:
+      # MinIO connection settings (connecting to minio service)
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_BUCKET: b12-analysis
+      MINIO_SECURE: "false"
+      # Public URL should point to how clients access MinIO
+      # For local development: http://localhost:9000
+      # For production: your actual MinIO domain
+      MINIO_PUBLIC_URL: http://localhost:9000
+      
+      # Flask settings
+      FLASK_ENV: development
+      FLASK_DEBUG: "true"
+    volumes:
+      # Mount application code for development (hot reload)
+      - .:/app
+      # Exclude Python cache and virtual environments
+      - /app/__pycache__
+      - /app/.venv
+    depends_on:
+      - minio
+    networks:
+      - b12-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5002/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Named volumes for data persistence
+volumes:
+  minio_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  b12-network:
+    driver: bridge
