@@ -3,7 +3,7 @@ FROM python:3.10-bullseye
 
 # Set metadata
 LABEL maintainer="your-email@example.com"
-LABEL description="Vitamin B12 Hand Analysis Application with MinIO"
+LABEL description="Vitamin B12 Hand Analysis Application with Local Storage"
 
 # Install system dependencies required for OpenCV and MediaPipe
 RUN apt-get update && apt-get install -y \
@@ -31,8 +31,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create directories for temporary file storage
-RUN mkdir -p uploads processed
+# Create directories for file storage
+RUN mkdir -p uploads processed stored_images/originals stored_images/processed
 
 # Expose Flask port
 EXPOSE 5002

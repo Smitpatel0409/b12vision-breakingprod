@@ -1,553 +1,1040 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vitamin B12 Hand Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- MediaPipe Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        max-width: 900px;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.2em;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+      }
+
+      .header p {
+        opacity: 0.95;
+        font-size: 1.1em;
+        font-weight: 400;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .info-box {
+        background: #f8fafc;
+        border-left: 4px solid #667eea;
+        padding: 24px;
+        margin-bottom: 32px;
+        border-radius: 12px;
+      }
+
+      .info-box h3 {
+        color: #1e293b;
+        margin-bottom: 12px;
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+
+      .info-box ul {
+        margin-left: 20px;
+        color: #64748b;
+      }
+
+      .info-box li {
+        margin: 8px 0;
+        font-size: 0.95em;
+      }
+
+      .upload-section {
+        margin: 32px 0;
+      }
+
+      .upload-options {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .upload-area, .capture-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 40px 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        flex: 1;
+        min-width: 200px;
+        position: relative;
+      }
+
+      .upload-area:hover, .capture-area:not(.active):hover {
+        background: #e2e8f0;
+        border-color: #667eea;
+        transform: translateY(-2px);
+      }
+
+      .upload-area.dragover {
+        background: #e7f3ff;
+        border-color: #0066cc;
+      }
+
+      .capture-area.active {
+        border-color: #10b981;
+        background: #ecfdf5;
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+      }
+
+      .upload-icon, .capture-icon {
+        font-size: 3.5em;
+        margin-bottom: 16px;
+      }
+
+      .upload-text, .capture-text {
+        color: #475569;
+        font-size: 1em;
+        font-weight: 500;
+      }
+
+      .upload-text strong, .capture-text strong {
+        color: #667eea;
+      }
+
+      .upload-text small, .capture-text small {
+        display: block;
+        font-size: 0.85em;
+        color: #94a3b8;
+        margin-top: 4px;
+        font-weight: 400;
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      /* Camera Preview Modal */
+      .camera-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .camera-modal.active {
+        display: flex;
+      }
+
+      .camera-container {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        max-width: 500px;
+        width: 100%;
+        max-height: 90vh;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      }
+
+      .camera-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .camera-header h3 {
+        color: #1e293b;
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .camera-header p {
+        color: #64748b;
+        font-size: 0.95em;
+      }
+
+      .camera-video-container {
+        position: relative;
+        width: 100%;
+        height: 300px;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      #cameraVideo, #handCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .camera-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .camera-overlay.active {
+        opacity: 1;
+      }
+
+      .hand-guideline {
+        color: #10b981;
+        font-size: 1.2em;
+        text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+      }
+
+      .camera-controls {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      .camera-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 50px;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 120px;
+      }
+
+      .capture-btn {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      }
+
+      .capture-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+      }
+
+      .capture-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .flash-btn {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+      }
+
+      .flash-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+      }
+
+      .cancel-btn {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+      }
+
+      .cancel-btn:hover {
+        background: #e2e8f0;
+      }
+
+      .error-message {
+        display: none;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        padding: 20px;
+        border-radius: 12px;
+        margin: 20px 0;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .error-message.active {
+        display: block;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 40px;
+      }
+
+      .loading.active {
+        display: block;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .preview-section {
+        display: none;
+        margin: 32px 0;
+      }
+
+      .preview-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .preview-box {
+        text-align: center;
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 12px;
+      }
+
+      .preview-box h4 {
+        color: #1e293b;
+        margin-bottom: 16px;
+        font-size: 1em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .preview-box img {
+        width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        background: white;
+      }
+
+      .preview-box:nth-child(2) {
+        display: none;
+      }
+
+      .result-section {
+        display: none;
+        margin: 32px 0;
+        padding: 40px;
+        border-radius: 16px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .result-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: inherit;
+        filter: blur(20px);
+        z-index: -1;
+      }
+
+      .result-section.sufficient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        color: white;
+      }
+
+      .result-section.deficient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+        color: white;
+      }
+
+      .result-icon {
+        font-size: 4em;
+        margin-bottom: 20px;
+      }
+
+      .result-section h2 {
+        font-size: 2.2em;
+        font-weight: 700;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+      }
+
+      .result-section p {
+        font-size: 1.1em;
+        opacity: 0.95;
+        font-weight: 400;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .color-score {
+        margin-top: 24px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        font-size: 1.1em;
+        font-weight: 500;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 16px 48px;
+        border-radius: 50px;
+        font-size: 1em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        margin: 8px;
+        letter-spacing: 0.02em;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+      }
+
+      .actions {
+        text-align: center;
+        margin-top: 32px;
+      }
+
+      @media (max-width: 768px) {
+        .preview-container {
+          grid-template-columns: 1fr;
+          gap: 16px;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 900px;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+        .preview-container .preview-box:nth-child(2) {
+          display: none;
         }
 
         .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
+          font-size: 1.8em;
         }
 
         .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
+          font-size: 1em;
         }
 
         .content {
-            padding: 40px;
+          padding: 24px;
         }
 
-        .info-box {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 8px;
+        .upload-area, .capture-area {
+          padding: 32px 20px;
+          min-width: unset;
         }
 
-        .info-box h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .info-box ul {
-            margin-left: 20px;
-            color: #555;
-        }
-
-        .info-box li {
-            margin: 8px 0;
-        }
-
-        .upload-section {
-            margin: 30px 0;
-        }
-
-        .upload-area {
-            border: 3px dashed #667eea;
-            border-radius: 15px;
-            padding: 50px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .upload-area:hover {
-            background: #e9ecef;
-            border-color: #764ba2;
-        }
-
-        .upload-area.dragover {
-            background: #e7f3ff;
-            border-color: #0066cc;
-        }
-
-        .upload-icon {
-            font-size: 4em;
-            color: #667eea;
-            margin-bottom: 20px;
-        }
-
-        .upload-text {
-            color: #555;
-            font-size: 1.1em;
-        }
-
-        .upload-text strong {
-            color: #667eea;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .preview-section {
-            display: none;
-            margin: 30px 0;
-        }
-
-        .preview-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .preview-box {
-            text-align: center;
-        }
-
-        .preview-box h4 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.1em;
-        }
-
-        .preview-box img {
-            width: 100%;
-            max-height: 400px;
-            object-fit: contain;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            background: #f8f9fa;
+        .upload-options {
+          flex-direction: column;
+          gap: 12px;
         }
 
         .result-section {
-            display: none;
-            margin: 30px 0;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        .result-section.sufficient {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-        }
-
-        .result-section.deficient {
-            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
-            color: white;
-        }
-
-        .result-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
+          padding: 32px 24px;
         }
 
         .result-section h2 {
-            font-size: 2em;
-            margin-bottom: 15px;
+          font-size: 1.8em;
         }
 
-        .result-section p {
-            font-size: 1.2em;
-            opacity: 0.95;
+        .camera-video-container {
+          height: 250px;
         }
 
-        .color-score {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            font-size: 1.1em;
+        .camera-controls {
+          flex-direction: column;
+          gap: 8px;
         }
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 30px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            margin: 10px;
+        .camera-btn {
+          min-width: unset;
         }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .loading.active {
-            display: block;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error-message {
-            display: none;
-            background: #ff6b6b;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .error-message.active {
-            display: block;
-        }
-
-        .actions {
-            text-align: center;
-            margin-top: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .preview-container {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 1.5em;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .upload-area {
-                padding: 30px 20px;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>🩺 Vitamin B12 Hand Analysis</h1>
-            <p>AI-Powered Nutritional Assessment</p>
+      <div class="header">
+        <h1>🩺 Vitamin B12 Hand Analysis</h1>
+        <p>AI-Powered Nutritional Assessment</p>
+      </div>
+
+      <div class="content">
+        <div class="info-box">
+          <h3>📋 Instructions</h3>
+          <ul>
+            <li>Use your <strong>LEFT HAND</strong> for accurate analysis</li>
+            <li>Ensure good, even lighting (avoid harsh shadows)</li>
+            <li>Keep hand straight with fingers extended upward</li>
+            <li>Capture image from palm side showing full hand</li>
+            <li>Supported formats: JPG, PNG, WEBP, BMP (max 10MB)</li>
+          </ul>
         </div>
 
-        <div class="content">
-            <div class="info-box">
-                <h3>📋 Instructions</h3>
-                <ul>
-                    <li>Use your <strong>LEFT HAND</strong> for accurate analysis</li>
-                    <li>Ensure good, even lighting (avoid harsh shadows)</li>
-                    <li>Keep hand straight with fingers extended upward</li>
-                    <li>Capture image from palm side showing full hand</li>
-                    <li>Supported formats: JPG, PNG, WEBP, BMP (max 10MB)</li>
-                </ul>
+        <div class="upload-section">
+          <div class="upload-options">
+            <div class="upload-area" id="uploadArea">
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">
+                <strong>Upload Photo</strong><br />
+                <small>From gallery</small>
+              </div>
             </div>
-
-            <div class="upload-section">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📸</div>
-                    <div class="upload-text">
-                        <strong>Click to upload</strong> or drag and drop<br>
-                        <small>Your left hand image</small>
-                    </div>
-                </div>
-                <input type="file" id="fileInput" accept="image/*">
+            <div class="capture-area" id="captureArea">
+              <div class="capture-icon">📸</div>
+              <div class="capture-text">
+                <strong>Take Live Photo</strong><br />
+                <small>Use camera</small>
+              </div>
             </div>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Analyzing your hand image...<br>This may take a few moments</p>
-            </div>
-
-            <div class="error-message" id="errorMessage"></div>
-
-            <div class="preview-section" id="previewSection">
-                <div class="preview-container">
-                    <div class="preview-box">
-                        <h4>Original Image</h4>
-                        <img id="originalImage" src="" alt="Original">
-                    </div>
-                    <div class="preview-box">
-                        <h4>Analyzed Image</h4>
-                        <img id="processedImage" src="" alt="Processed">
-                    </div>
-                </div>
-            </div>
-
-            <div class="result-section" id="resultSection">
-                <div class="result-icon" id="resultIcon"></div>
-                <h2 id="resultStatus"></h2>
-                <p id="resultDescription"></p>
-                <div class="color-score">
-                    <strong>Color Score Difference:</strong> <span id="colorScore"></span>
-                </div>
-            </div>
-
-            <div class="actions">
-                <button class="btn" id="analyzeBtn" style="display: none;">
-                    🔬 Analyze Image
-                </button>
-                <button class="btn btn-secondary" id="resetBtn" style="display: none;">
-                    🔄 Analyze Another Image
-                </button>
-            </div>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" />
         </div>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p>Analyzing your hand image...<br />This may take a few moments</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="preview-section" id="previewSection">
+          <div class="preview-container">
+            <div class="preview-box">
+              <h4>Original Image</h4>
+              <img id="originalImage" src="" alt="Original" />
+            </div>
+            <div class="preview-box">
+              <h4>Analyzed Image</h4>
+              <img id="processedImage" src="" alt="Processed" />
+            </div>
+          </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+          <div class="result-icon" id="resultIcon"></div>
+          <h2 id="resultStatus"></h2>
+          <p id="resultDescription"></p>
+          <div class="color-score">
+            <strong>Color Score Difference:</strong>
+            <span id="colorScore"></span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="analyzeBtn" style="display: none">
+            🔬 Analyze Image
+          </button>
+          <button class="btn btn-secondary" id="resetBtn" style="display: none">
+            🔄 Analyze Another Image
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div class="camera-modal" id="cameraModal">
+      <div class="camera-container">
+        <div class="camera-header">
+          <h3>📸 Capture Your Hand</h3>
+          <p>Position your left hand palm-up in good lighting</p>
+        </div>
+        <div class="camera-video-container">
+          <video id="cameraVideo" autoplay playsinline></video>
+          <canvas id="handCanvas"></canvas>
+          <div class="camera-overlay" id="cameraOverlay">
+            <div class="hand-guideline">✋ Position Hand Here</div>
+          </div>
+        </div>
+        <div class="camera-controls">
+          <button class="camera-btn cancel-btn" id="cancelCapture">Cancel</button>
+          <button class="camera-btn flash-btn" id="flashToggle">Flash Off</button>
+          <button class="camera-btn capture-btn" id="captureBtn">Capture</button>
+        </div>
+      </div>
     </div>
 
     <script>
-        // Configuration
-        const API_BASE_URL = 'http://10.11.7.142:5002' || 'http://localhost:5002';
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-        const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp'];
+      // Configuration
+      const API_BASE_URL = "http://10.11.7.142:5002" || "http://localhost:5002";
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+      const ALLOWED_TYPES = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+        "image/bmp",
+      ];
 
-        // DOM Elements
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const loading = document.getElementById('loading');
-        const errorMessage = document.getElementById('errorMessage');
-        const previewSection = document.getElementById('previewSection');
-        const resultSection = document.getElementById('resultSection');
-        const originalImage = document.getElementById('originalImage');
-        const processedImage = document.getElementById('processedImage');
-        const resultIcon = document.getElementById('resultIcon');
-        const resultStatus = document.getElementById('resultStatus');
-        const resultDescription = document.getElementById('resultDescription');
-        const colorScore = document.getElementById('colorScore');
+      // DOM Elements
+      const uploadArea = document.getElementById("uploadArea");
+      const captureArea = document.getElementById("captureArea");
+      const fileInput = document.getElementById("fileInput");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const loading = document.getElementById("loading");
+      const errorMessage = document.getElementById("errorMessage");
+      const previewSection = document.getElementById("previewSection");
+      const resultSection = document.getElementById("resultSection");
+      const originalImage = document.getElementById("originalImage");
+      const processedImage = document.getElementById("processedImage");
+      const resultIcon = document.getElementById("resultIcon");
+      const resultStatus = document.getElementById("resultStatus");
+      const resultDescription = document.getElementById("resultDescription");
+      const colorScore = document.getElementById("colorScore");
 
-        let selectedFile = null;
+      // Camera elements
+      const cameraModal = document.getElementById("cameraModal");
+      const cameraVideo = document.getElementById("cameraVideo");
+      const cameraOverlay = document.getElementById("cameraOverlay");
+      const captureBtn = document.getElementById("captureBtn");
+      const cancelCapture = document.getElementById("cancelCapture");
+      const flashToggle = document.getElementById("flashToggle");
+      const handCanvas = document.getElementById("handCanvas");
 
-        // Upload area click handler
-        uploadArea.addEventListener('click', () => {
-            fileInput.click();
+      let selectedFile = null;
+      let mediaStream = null;
+      let canvas = null;
+      let isCameraMode = false;
+      let flashOn = false;
+      let hands = null;
+      let camera = null;
+
+      // Initialize canvas for capture
+      function initCanvas() {
+        canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+      }
+
+      // Initialize MediaPipe Hands
+      function initHands() {
+        hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
 
-        // File input change handler
-        fileInput.addEventListener('change', (e) => {
-            handleFileSelect(e.target.files[0]);
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
         });
 
-        // Drag and drop handlers
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+        hands.onResults(onHandResults);
+      }
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
+      // Handle hand detection results
+      function onHandResults(results) {
+        const canvasCtx = handCanvas.getContext('2d');
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            handleFileSelect(e.dataTransfer.files[0]);
-        });
+        if (results.multiHandLandmarks) {
+          for (const landmarks of results.multiHandLandmarks) {
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 5 });
+            drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 2 });
+          }
+          cameraOverlay.classList.remove('active'); // Hide guideline if hand detected
+        } else {
+          cameraOverlay.classList.add('active'); // Show guideline if no hand
+        }
 
-        // Analyze button handler
-        analyzeBtn.addEventListener('click', analyzeImage);
+        canvasCtx.restore();
+      }
 
-        // Reset button handler
-        resetBtn.addEventListener('click', resetForm);
-
-        // File selection handler
-        function handleFileSelect(file) {
-            if (!file) return;
-
-            // Validate file type
-            if (!ALLOWED_TYPES.includes(file.type)) {
-                showError('Invalid file type. Please upload a JPG, PNG, WEBP, or BMP image.');
-                return;
+      // Start camera and hand detection
+      async function startCamera() {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: 640,
+              height: 480,
+              facingMode: 'environment'
             }
+          });
+          cameraVideo.srcObject = mediaStream;
 
-            // Validate file size
-            if (file.size > MAX_FILE_SIZE) {
-                showError('File too large. Maximum size is 10MB.');
-                return;
-            }
+          // Resize canvas to match video
+          handCanvas.width = cameraVideo.videoWidth;
+          handCanvas.height = cameraVideo.videoHeight;
 
-            selectedFile = file;
-            
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                originalImage.src = e.target.result;
-                analyzeBtn.style.display = 'inline-block';
-                hideError();
-            };
-            reader.readAsDataURL(file);
+          // Start MediaPipe camera
+          camera = new Camera(cameraVideo, {
+            onFrame: async () => {
+              await hands.send({ image: cameraVideo });
+            },
+            width: 640,
+            height: 480
+          });
+          camera.start();
+
+          cameraOverlay.classList.add('active');
+          captureBtn.disabled = false;
+          return true;
+        } catch (err) {
+          console.error("Camera access denied:", err);
+          showError(
+            "Camera access is required to take a live photo. Please allow camera permission in your browser settings and try again."
+          );
+          return false;
+        }
+      }
+
+      // Stop camera stream and hand detection
+      function stopCamera() {
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+          mediaStream = null;
+        }
+        if (camera) {
+          camera.stop();
+        }
+        cameraVideo.srcObject = null;
+        captureBtn.disabled = true;
+      }
+
+      // Toggle flashlight
+      async function toggleFlash() {
+        if (!mediaStream) return;
+        const track = mediaStream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities();
+        if (!capabilities.torch) {
+          showError('Flashlight not supported on this device.');
+          return;
+        }
+        flashOn = !flashOn;
+        await track.applyConstraints({ advanced: [{ torch: flashOn }] });
+        flashToggle.textContent = flashOn ? 'Flash On' : 'Flash Off';
+      }
+
+      // Capture photo
+      function capturePhoto() {
+        const context = canvas.getContext('2d');
+        context.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          const file = new File([blob], 'hand-capture.jpg', { type: 'image/jpeg' });
+          handleFileSelect(file);
+          closeCameraModal();
+        }, 'image/jpeg', 0.9);
+      }
+
+      // Open camera modal
+      async function openCameraModal() {
+        initCanvas();
+        initHands();
+        captureArea.classList.add('active');
+        if (await startCamera()) {
+          cameraModal.classList.add('active');
+        }
+      }
+
+      // Close camera modal
+      function closeCameraModal() {
+        cameraModal.classList.remove('active');
+        stopCamera();
+        captureArea.classList.remove('active');
+        cameraOverlay.classList.remove('active');
+        isCameraMode = false;
+        flashOn = false;
+        flashToggle.textContent = 'Flash Off';
+      }
+
+      // Upload area click handler (Gallery)
+      uploadArea.addEventListener("click", () => {
+        isCameraMode = false;
+        fileInput.removeAttribute('capture');
+        fileInput.click();
+      });
+
+      // Capture area click handler (Camera)
+      captureArea.addEventListener("click", openCameraModal);
+
+      // Camera modal handlers
+      captureBtn.addEventListener("click", capturePhoto);
+      cancelCapture.addEventListener("click", closeCameraModal);
+      flashToggle.addEventListener("click", toggleFlash);
+
+      // Close modal on outside click
+      cameraModal.addEventListener("click", (e) => {
+        if (e.target === cameraModal) closeCameraModal();
+      });
+
+      // File input change handler (for gallery)
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file && !isCameraMode) {
+          handleFileSelect(file);
+        }
+      });
+
+      // Drag and drop handlers (only for upload area)
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("dragover");
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("dragover");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("dragover");
+        isCameraMode = false;
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileSelect(file);
+      });
+
+      // Analyze button handler
+      analyzeBtn.addEventListener("click", analyzeImage);
+
+      // Reset button handler
+      resetBtn.addEventListener("click", resetForm);
+
+      // File selection handler
+      function handleFileSelect(file) {
+        if (!file) return;
+
+        // Validate file type
+        if (!ALLOWED_TYPES.includes(file.type)) {
+          showError(
+            "Invalid file type. Please upload a JPG, PNG, WEBP, or BMP image."
+          );
+          return;
         }
 
-        // Analyze image
-        async function analyzeImage() {
-            if (!selectedFile) return;
-
-            // Hide previous results
-            previewSection.style.display = 'none';
-            resultSection.style.display = 'none';
-            analyzeBtn.style.display = 'none';
-            resetBtn.style.display = 'none';
-            hideError();
-
-            // Show loading
-            loading.classList.add('active');
-
-            try {
-                // Prepare form data
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-
-                // Send request to API
-                const response = await fetch(`${API_BASE_URL}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                // Hide loading
-                loading.classList.remove('active');
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Analysis failed');
-                }
-
-                // Display results
-                displayResults(data);
-
-            } catch (error) {
-                loading.classList.remove('active');
-                showError(error.message || 'Failed to analyze image. Please try again.');
-                analyzeBtn.style.display = 'inline-block';
-            }
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+          showError("File too large. Maximum size is 10MB.");
+          return;
         }
 
-        // Display results
-        function displayResults(data) {
-            // Show preview section
-            processedImage.src = data.processed_image_url;
-            previewSection.style.display = 'block';
+        selectedFile = file;
 
-            // Show result section
-            const isDeficient = data.vitamin_b12_status.toLowerCase() === 'deficient';
-            resultSection.className = 'result-section ' + (isDeficient ? 'deficient' : 'sufficient');
-            resultSection.style.display = 'block';
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          originalImage.src = e.target.result;
+          previewSection.style.display = "block";
+          analyzeBtn.style.display = "inline-block";
+          hideError();
+        };
+        reader.readAsDataURL(file);
+      }
 
-            // Set result content
-            if (isDeficient) {
-                resultIcon.textContent = '⚠️';
-                resultStatus.textContent = 'B12 Deficiency Detected';
-                resultDescription.textContent = 'Your analysis indicates potential Vitamin B12 deficiency. Please consult a healthcare professional for proper diagnosis and treatment.';
-            } else {
-                resultIcon.textContent = '✅';
-                resultStatus.textContent = 'B12 Levels Sufficient';
-                resultDescription.textContent = 'Your analysis indicates normal Vitamin B12 levels. Continue maintaining a healthy diet rich in B12 sources.';
-            }
+      // Analyze image
+      async function analyzeImage() {
+        if (!selectedFile) return;
 
-            colorScore.textContent = data.color_score_diff.toFixed(2);
+        // Hide results but keep preview
+        resultSection.style.display = "none";
+        analyzeBtn.style.display = "none";
+        resetBtn.style.display = "none";
+        hideError();
 
-            // Show reset button
-            resetBtn.style.display = 'inline-block';
+        // Show loading
+        loading.classList.add("active");
 
-            // Scroll to results
-            resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        try {
+          // Prepare form data
+          const formData = new FormData();
+          formData.append("file", selectedFile);
+
+          // Send request to API
+          const response = await fetch(`${API_BASE_URL}/upload`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          // Hide loading
+          loading.classList.remove("active");
+
+          if (!response.ok) {
+            throw new Error(data.error || "Analysis failed");
+          }
+
+          // Display results
+          displayResults(data);
+        } catch (error) {
+          loading.classList.remove("active");
+          showError(
+            error.message || "Failed to analyze image. Please try again."
+          );
+          analyzeBtn.style.display = "inline-block";
+        }
+      }
+
+      // Display results
+      function displayResults(data) {
+        // Show processed image
+        processedImage.src = data.processed_image_url;
+        document.querySelector('.preview-box:nth-child(2)').style.display = 'block';
+
+        // Show result section
+        const isDeficient =
+          data.vitamin_b12_status.toLowerCase() === "deficient";
+        resultSection.className =
+          "result-section " + (isDeficient ? "deficient" : "sufficient");
+        resultSection.style.display = "block";
+
+        // Set result content
+        if (isDeficient) {
+          resultIcon.textContent = "⚠️";
+          resultStatus.textContent = "B12 Deficiency Detected";
+          resultDescription.textContent =
+            "Your analysis indicates potential Vitamin B12 deficiency. Please consult a healthcare professional for proper diagnosis and treatment.";
+        } else {
+          resultIcon.textContent = "✅";
+          resultStatus.textContent = "B12 Levels Sufficient";
+          resultDescription.textContent =
+            "Your analysis indicates normal Vitamin B12 levels. Continue maintaining a healthy diet rich in B12 sources.";
         }
 
-        // Reset form
-        function resetForm() {
-            selectedFile = null;
-            fileInput.value = '';
-            previewSection.style.display = 'none';
-            resultSection.style.display = 'none';
-            analyzeBtn.style.display = 'none';
-            resetBtn.style.display = 'none';
-            originalImage.src = '';
-            processedImage.src = '';
-            hideError();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        colorScore.textContent = data.color_score_diff.toFixed(2);
 
-        // Show error message
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.add('active');
-        }
+        // Show reset button
+        resetBtn.style.display = "inline-block";
 
-        // Hide error message
-        function hideError() {
-            errorMessage.classList.remove('active');
-        }
+        // Scroll to results
+        resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
 
-        // Check API health on load
-        async function checkAPIHealth() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/health`);
-                if (!response.ok) {
-                    console.warn('API health check failed');
-                }
-            } catch (error) {
-                console.error('Could not connect to API:', error);
-                showError('Cannot connect to analysis server. Please ensure the backend is running.');
-            }
-        }
+      // Reset form
+      function resetForm() {
+        selectedFile = null;
+        fileInput.value = "";
+        previewSection.style.display = "none";
+        resultSection.style.display = "none";
+        analyzeBtn.style.display = "none";
+        resetBtn.style.display = "none";
+        originalImage.src = "";
+        processedImage.src = "";
+        document.querySelector('.preview-box:nth-child(2)').style.display = 'none';
+        hideError();
+        isCameraMode = false;
+        closeCameraModal();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
-        // Initialize
-        checkAPIHealth();
+      // Show error message
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add("active");
+      }
+
+      // Hide error message
+      function hideError() {
+        errorMessage.classList.remove("active");
+      }
+
+      // Check API health on load
+      async function checkAPIHealth() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/health`);
+          if (!response.ok) {
+            console.warn("API health check failed");
+          }
+        } catch (error) {
+          console.error("Could not connect to API:", error);
+          showError(
+            "Cannot connect to analysis server. Please ensure the backend is running."
+          );
+        }
+      }
+
+      // Initialize
+      initCanvas();
+      checkAPIHealth();
     </script>
-</body>
+  </body>
 </html>
