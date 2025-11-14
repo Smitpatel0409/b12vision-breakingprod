@@ -1,34 +1,31 @@
 # Use Python 3.10 with Debian Bullseye as base image
 FROM python:3.10-bullseye
 
-# Set metadata
-LABEL maintainer="your-email@example.com"
-LABEL description="Vitamin B12 Hand Analysis Application with Local Storage"
+LABEL maintainer="patelshreyansh376@gmail.com"
+LABEL description="Vitamin B12 Hand Analysis Application - CPU Only"
 
-# Install system dependencies required for OpenCV and MediaPipe
+# Install system dependencies for MediaPipe & OpenCV
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
-    libgl1 \
     libglib2.0-0 \
     libprotobuf-dev \
     protobuf-compiler \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory inside container
 WORKDIR /app
 
-# Copy requirements first (for better Docker layer caching)
+# Copy requirements first for caching
 COPY requirements.txt .
 
-# Upgrade pip to latest version
+# Upgrade pip
 RUN pip install --upgrade pip
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy app code
 COPY . .
 
 # Create directories for file storage
@@ -37,11 +34,12 @@ RUN mkdir -p uploads processed stored_images/originals stored_images/processed
 # Expose Flask port
 EXPOSE 5002
 
-# Set environment variables
+# Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=app.py
+ENV MEDIAPIPE_DISABLE_GPU=1 
 
-# Health check to ensure container is running properly
+# Optional: Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5002/health')" || exit 1
 
