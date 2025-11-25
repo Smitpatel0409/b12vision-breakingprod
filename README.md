@@ -1,4 +1,4 @@
-# Vitamin B12 Hand Analysis Applications (https://b12vision-breakingprod.onrender.com/)
+# Vitamin B12 Hand Analysis Applicationss (https://b12vision-breakingprod.onrender.com/)
 
 A Flask-based application that analyzes hand images to determine Vitamin B12 status using computer vision and color analysis techniques.
 
